@@ -4,11 +4,13 @@ import {
   getTCActual,
   actualizarTipoCambioMasivo
 } from '../controllers/tcController.js';
+import { permitirRoles } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
 router.get('/', getHistorialTC);
-router.get('/actual', getTCActual);
-router.post('/actualizar-masivo', actualizarTipoCambioMasivo);
+// En src/routes/tcRoutes.js
+router.get('/actual', getTCActual); // El auxiliar PUEDE leerlo para ver precios
+router.post('/actualizar-masivo', permitirRoles('ADMIN'), actualizarTipoCambioMasivo); // SOLO ADMIN cambia la BD
 
 export default router;

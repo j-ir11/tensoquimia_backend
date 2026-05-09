@@ -1,26 +1,31 @@
 import express from 'express';
-import {
-  getProductos,
-  getProductoById,
-  createProducto,
-  updateProducto,
+import { 
+  getProductos, 
+  getProductoById, 
+  createProducto, 
+  updateProducto, 
   deleteProducto,
-  getCostoActual
+  getCostoActual 
 } from '../controllers/productoController.js';
+// Importamos los seguros
+import { permitirRoles } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-// 1. Rutas sin parámetros dinámicos
+/**
+ * RUTAS DE LECTURA
+ * Disponibles para ADMIN, VENTAS y PRODUCCION (Auxiliar)
+ */
 router.get('/', getProductos);
-router.post('/', createProducto);
-
-// 2. Rutas con prefijos específicos (COSTO)
-// Esto debe ir ANTES de las rutas con :id solo
-router.get('/costo/:id', getCostoActual); 
-
-// 3. Rutas con parámetros dinámicos generales (:id)
 router.get('/:id', getProductoById);
-router.put('/:id', updateProducto);
-router.delete('/:id', deleteProducto);
+router.get('/:id/costo', getCostoActual);
+
+/**
+ * RUTAS DE ESCRITURA
+ * SOLO el ADMIN puede ejecutar estas acciones en la base de datos
+ */
+router.post('/', permitirRoles('ADMIN'), createProducto);
+router.put('/:id', permitirRoles('ADMIN'), updateProducto);
+router.delete('/:id', permitirRoles('ADMIN'), deleteProducto);
 
 export default router;
