@@ -8,7 +8,20 @@ import pool from '../config/database.js';
 const cacheCostos = new Map();
 const cacheProductos = new Map();
 const cacheVersiones = new Map();
+const redondearCostoEstricto = (valor) => {
+  const num = parseFloat(valor);
+  if (isNaN(num) || num < 0) return 0;
+  
+  const multiplicado = num * 100;
+  const parteEntera = Math.floor(multiplicado);
+  const residuoDecimal = multiplicado - parteEntera;
 
+  if (residuoDecimal >= 0.49999) {
+    return parseFloat(((parteEntera + 1) / 100).toFixed(2));
+  } else {
+    return parseFloat((parteEntera / 100).toFixed(2));
+  }
+};
 /**
  * Tipo de cambio
  */
@@ -65,10 +78,12 @@ export const calcularCostoSintetizado = async (id_producto, tcManual = null, sta
     const tcActual = tcManual || await getUltimoTCValor();
 
     // 3. Lógica Materia Prima
+
     if (prod.tipo_producto === 'MP') {
       const costoBase = parseFloat(prod.costo || 0);
+      // Cambiamos el .toFixed(4) por nuestra nueva regla estricta de 2 decimales
       const costoFinal = prod.moneda === 'USD' 
-        ? parseFloat((costoBase * tcActual).toFixed(4)) 
+        ? redondearCostoEstricto(costoBase * tcActual) 
         : costoBase;
       
       cacheCostos.set(id_producto, costoFinal);
@@ -100,13 +115,16 @@ export const calcularCostoSintetizado = async (id_producto, tcManual = null, sta
         ing.id_componente,
         tcActual,
         stack,
-        executor // 🔥 Pasamos la conexión a las llamadas recursivas
+        executor 
       );
-      costoMezcla += costoComp * (parseFloat(ing.porcentaje) / 100);
+      // 1. Redondeamos el aporte de cada ingrediente a 2 decimales antes de sumarlo
+      const aporteFila = redondearCostoEstricto(costoComp * (parseFloat(ing.porcentaje) / 100));
+      costoMezcla += aporteFila;
     }
 
-    const resultado = parseFloat((costoMezcla + parseFloat(versionActual.factor_proceso || 0)).toFixed(4));
-    
+    // 2. El resultado final con su factor de proceso se procesa con la regla estricta
+    const resultado = redondearCostoEstricto(costoMezcla + parseFloat(versionActual.factor_proceso || 0));
+
     cacheCostos.set(id_producto, resultado);
     stack.delete(id_producto);
     return resultado;
