@@ -26,7 +26,7 @@ export const getVersionesByProducto = async (req, res) => {
 };
 
 /**
- * Obtener la versión más reciente de un producto
+ * Obtener la versión más reciente de un producto OLA
  */
 export const getUltimaVersion = async (req, res) => {
   try {
